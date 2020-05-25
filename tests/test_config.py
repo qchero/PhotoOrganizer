@@ -63,7 +63,7 @@ def test_should_read_correct_config(setup_full_config_file):
     assert config.library_dir == "./Temp/LibraryDir"
     assert config.library_ignore_dirs == ['./Temp/NoDate', './Temp/Special']
     assert config.working_dir == "./Temp/WorkingDir"
-    assert config.md5_size_limit == 666
+    assert config.md5_size_limit == 100
 
 
 def test_should_provide_correct_default(setup_minimum_config_file):
@@ -72,23 +72,28 @@ def test_should_provide_correct_default(setup_minimum_config_file):
     assert config.library_dir == os.getcwd()
     assert config.library_ignore_dirs == []
     assert config.working_dir == os.path.join(os.getcwd(), ".PhotoOrganizer/")
-    assert config.md5_size_limit == 512
+    assert config.md5_size_limit == 100
+
+
+def test_config_file_missing_should_throw():
+    with pytest.raises(InvalidConfigException):
+        Config()
 
 
 def test_incoming_dir_missing_should_throw(setup_missing_key_config_file):
     with pytest.raises(InvalidConfigException):
-        config = Config()
+        Config()
 
 
 def test_library_dir_nonexist_should_throw(setup_full_config_file):
     shutil.rmtree("./Temp/LibraryDir", ignore_errors=True)
 
     with pytest.raises(InvalidConfigException):
-        config = Config()
+        Config()
 
 
 def test_incoming_dir_nonexist_should_throw(setup_full_config_file):
     shutil.rmtree("./Temp/IncomingDir", ignore_errors=True)
 
     with pytest.raises(InvalidConfigException):
-        config = Config()
+        Config()

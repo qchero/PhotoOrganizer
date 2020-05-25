@@ -8,7 +8,7 @@ from photo_organizer.config import Config
 from photo_organizer.organizer import Organizer
 
 # All supported actions
-supported_actions = ["setup"]
+supported_actions = ["analyze", "setup"]
 
 logging_format = "%(asctime)s %(threadName)s [%(levelname)s] %(message)s"
 
@@ -64,7 +64,9 @@ def main():
 
     try:
         organizer = Organizer(config)
-        if args.action == "setup":
+        if args.action == "analyze":
+            organizer.analyze()
+        elif args.action == "setup":
             organizer.setup()
         else:
             raise InvalidInputException(f"Unsupported command '{args.action}'")

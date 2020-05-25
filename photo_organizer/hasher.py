@@ -14,6 +14,6 @@ def get_hash(file_path, size_threshold):
     """
     size = os.path.getsize(file_path)
     if size > size_threshold:
-        return os.path.getsize(file_path)
+        return str(os.path.getsize(file_path))
 
     return hashlib.md5(open(file_path, 'rb').read()).hexdigest()
