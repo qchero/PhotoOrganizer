@@ -4,3 +4,7 @@ class InvalidInputException(Exception):
 
 class InvalidConfigException(Exception):
     pass
+
+
+class DatabaseException(Exception):
+    pass

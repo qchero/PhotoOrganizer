@@ -3,18 +3,25 @@ import os
 
 from tinydb import TinyDB, Query
 
+from exception.exception import DatabaseException
+
 
 class Cache:
 
-    def __init__(self, working_dir):
+    def __init__(self, working_dir: str):
         """
         Creating the cache object depending on a TinyDB file under WorkingDir
+        @param working_dir:
         """
         logging.debug(f"Setting up Cache")
+        os.makedirs(working_dir, exist_ok=True)
         self.db = TinyDB(os.path.join(working_dir, "db.json"))
         self.query_doc = Query()
 
-    def upsert_hashcode_doc(self, path, hashcode, size):
+    def close(self):
+        self.db.close()
+
+    def upsert_hashcode_doc(self, path: str, hashcode: str, size: int) -> None:
         """
         Insert an record into the DB
         @param path: The file path
@@ -27,7 +34,7 @@ class Cache:
     def get_all(self):
         return self.db.all()
 
-    def get_doc_by_path(self, path):
+    def get_doc_by_path(self, path: str):
         """
         Get the doc by file path
         @param path: The file path
@@ -37,20 +44,14 @@ class Cache:
         if len(search_result) == 0:
             return None
         elif len(search_result) > 1:
-            raise Exception("DB contains unexpected data! Multiple records for the same path exist!")
+            raise DatabaseException("DB contains unexpected data! Multiple records for the same path exist!")
 
         return search_result[0]
 
-    def get_doc_by_hashcode(self, hashcode):
+    def get_docs_by_hashcode(self, hashcode: str):
         """
         Get the doc by hash
         @param hashcode: The hashcode
         @return: The doc
         """
-        search_result = self.db.search(self.query_doc.hashcode == hashcode)
-        if len(search_result) == 0:
-            return None
-        elif len(search_result) > 1:
-            raise Exception("DB contains unexpected data! Multiple records for the same MD5 exist!")
-
-        return search_result[0]
+        return self.db.search(self.query_doc.hashcode == hashcode)
