@@ -1,6 +1,6 @@
-import glob
-import os
+import logging
 import pathlib
+from typing import List
 
 from photo_organizer.config import Config
 
@@ -8,25 +8,25 @@ from photo_organizer.config import Config
 class Library:
 
     def __init__(self, config: Config):
-        self.config = config
+        self._config = config
 
-    def get_all_library_paths(self):
-        glob_path = os.path.join(self.config.library_dir, "**/*")
-        all_paths = [os.path.abspath(p) for p in glob.glob(glob_path, recursive=True)]
-        return filter(lambda p: self._is_media_path(p) and not self._should_ignore(p), all_paths)
+    def get_all_library_paths(self) -> List[str]:
+        """
+        Get all the media paths in the library
+        @return: Paths that are relative to LibraryDir and all lowercase
+        """
+        glob_paths = self._config.cur_working_dir.glob("[0-9]*/**/*")
+        media_paths = list(filter(lambda p: self._is_media_path(p), glob_paths))
+        return [str(p).lower() for p in media_paths]
 
     @staticmethod
-    def _is_media_path(path):
-        return pathlib.Path(path).suffix.lower() in [".bmp", ".gif", ".heic", ".jpg", ".jpeg", ".m4v", ".mov",
-                                                     ".nef", ".png"]
-
-    def _should_ignore(self, path):
-        file_abspath = os.path.abspath(path)
-        if file_abspath.startswith(os.path.abspath(self.config.incoming_dir)):
+    def _is_media_path(path: pathlib.Path):
+        suffix = path.suffix.lower()
+        if suffix == "":
+            return False
+        elif suffix not in [".bmp", ".gif", ".heic", ".jpg", ".jpeg", ".m4v", ".mov", ".mp4",
+                            ".nef", ".png"]:
+            logging.debug(f"Not a recognized media file: {path}")
+            return False
+        else:
             return True
-
-        if any([file_abspath.startswith(os.path.abspath(ignore_dir_path))
-                for ignore_dir_path in self.config.library_ignore_dirs]):
-            return True
-
-        return False

@@ -24,7 +24,6 @@ def each_function():
 def cache():
     config = Mock()
     config.working_dir = "./Temp/"
-    config.library_dir = "./"
     cache = Cache(config)
     yield cache
     cache._conn.close()
@@ -36,7 +35,7 @@ def fill_cache(cache):
     cache.upsert_hashcode_doc("./3.jpg", "789", 1024)
 
 
-class TestUpsertHashcodeDoc:
+class Test_upsert_hashcode_doc:
     def test_create_db_file(self, cache):
         cache.upsert_hashcode_doc("./1.jpg", "123", 1024)
 
@@ -49,34 +48,34 @@ class TestUpsertHashcodeDoc:
         assert doc.hashcode == "321"
 
 
-class TestGetAll:
+class Test_get_all:
     def test_return_all(self, cache):
         fill_cache(cache)
         docs = cache.get_all()
         assert len(docs) == 3
-        assert set([doc.path for doc in docs]) == {"1.jpg", "2.jpg", "3.jpg"}
+        assert set([doc.path for doc in docs]) == {"./1.jpg", "./2.jpg", "./3.jpg"}
         assert set([doc.hashcode for doc in docs]) == {"123", "456", "789"}
         assert set([doc.size for doc in docs]) == {1024}
 
 
-class TestGetByPath:
+class Test_get_doc_by_path:
     def test_should_return_correct_result(self, cache):
         fill_cache(cache)
         assert cache.get_doc_by_path("./0.jpg") is None
         assert cache.get_doc_by_path("./1.jpg").hashcode == "123"
 
 
-class TestGetByHash:
+class Test_get_docs_by_hashcode:
     def test_should_return_correct_result(self, cache):
         fill_cache(cache)
         cache.upsert_hashcode_doc("./2_copy.jpg", "456", 1024)
 
         assert cache.get_docs_by_hashcode("666") == []
-        assert cache.get_docs_by_hashcode("123")[0].path == "1.jpg"
+        assert cache.get_docs_by_hashcode("123")[0].path == "./1.jpg"
         assert len(cache.get_docs_by_hashcode("456")) == 2
 
 
-class TestDeleteByPath:
+class Test_delete_by_path:
     def test_should_delete(self, cache):
         fill_cache(cache)
         cache.delete_by_path("./2.jpg")

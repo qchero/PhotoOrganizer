@@ -1,8 +1,8 @@
 import logging
 import os
-from typing import TypedDict, Optional, List
-
 import sqlite3
+from typing import Optional, List
+
 from exception.exception import DatabaseException
 from photo_organizer.config import Config
 
@@ -29,6 +29,7 @@ class Cache:
                              hashcode text NOT NULL,
                              size long NOT NULL); """)
         self._conn.execute("""CREATE INDEX IF NOT EXISTS hashcode ON hash (hashcode)""")
+        self._conn.execute('PRAGMA journal_mode = WAL')
 
     def __del__(self):
         if self._conn is not None:
@@ -40,7 +41,7 @@ class Cache:
         @param path: The path
         @return: The doc
         """
-        self._conn.execute(f"DELETE FROM hash WHERE path = '{self._get_path_key(path)}'")
+        self._conn.execute(f"DELETE FROM hash WHERE path = '{path}'")
 
     def get_all(self):
         rows = self._conn.execute(f"SELECT * FROM hash").fetchall()
@@ -52,11 +53,11 @@ class Cache:
         @param path: The file path
         @return: The doc
         """
-        rows = self._conn.execute(f"SELECT * FROM hash WHERE path = '{self._get_path_key(path)}'").fetchall()
+        rows = self._conn.execute(f"SELECT * FROM hash WHERE path = '{path}'").fetchall()
         if len(rows) == 0:
             return None
         elif len(rows) > 1:
-            raise DatabaseException("DB contains unexpected data! Multiple records for the same path exist!")
+            raise DatabaseException("Multiple records found for a primary key!")
 
         return self._row_to_doc(rows[0])
 
@@ -77,11 +78,8 @@ class Cache:
         @param size: The file size
         @return: success or not
         """
-        self._conn.execute(f"REPLACE INTO hash VALUES ('{self._get_path_key(path)}', '{hashcode}', {size})")
+        self._conn.execute(f"REPLACE INTO hash VALUES ('{path}', '{hashcode}', {size})")
 
     @staticmethod
     def _row_to_doc(row):
         return Doc(row[0], row[1], row[2])
-
-    def _get_path_key(self, path):
-        return os.path.relpath(path, self._config.library_dir).lower()

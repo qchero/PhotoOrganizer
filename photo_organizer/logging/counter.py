@@ -1,5 +1,6 @@
 import logging
 import math
+import sys
 
 
 class CounterLogger:
@@ -12,7 +13,7 @@ class CounterLogger:
         self.counter = {}
         self.cur_step = {}
 
-    def inc(self, prefix: str, increment: int = 1, step: int = 1000) -> None:
+    def inc(self, prefix: str, increment: int = 1, step: int = sys.maxsize) -> None:
         if prefix not in self.counter:
             self.counter[prefix] = increment
             self.cur_step[prefix] = 0
@@ -27,3 +28,6 @@ class CounterLogger:
     def dump(self) -> None:
         for prefix, count in self.counter.items():
             logging.info(f"{prefix}: {count}")
+
+    def register(self, prefix: str) -> None:
+        self.inc(prefix, increment=0)
