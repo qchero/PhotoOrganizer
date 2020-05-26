@@ -1,5 +1,5 @@
 import os
-import shutil
+from pathlib import Path
 from unittest.mock import Mock
 
 import pytest
@@ -7,23 +7,10 @@ import pytest
 from photo_organizer.cache import Cache
 
 
-@pytest.fixture(autouse=True)
-def each_function():
-    temp_path = "./Temp/"
-    if os.path.exists(temp_path):
-        shutil.rmtree(temp_path, ignore_errors=True)
-    os.makedirs(temp_path, exist_ok=True)
-    yield None
-    if os.path.exists(temp_path):
-        shutil.rmtree(temp_path, ignore_errors=True)
-    if os.path.exists("./.PhotoOrganizer"):
-        shutil.rmtree("./.PhotoOrganizer", ignore_errors=True)
-
-
 @pytest.fixture
 def cache():
     config = Mock()
-    config.working_dir = "./Temp/"
+    config.working_dir = Path("./Temp/")
     cache = Cache(config)
     yield cache
     cache._conn.close()

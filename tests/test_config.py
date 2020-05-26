@@ -9,16 +9,6 @@ from exception.exception import InvalidConfigException
 from photo_organizer.config import Config
 
 
-@pytest.fixture(autouse=True)
-def each_function():
-    temp_path = "./Temp/"
-    if os.path.exists(temp_path):
-        shutil.rmtree(temp_path, ignore_errors=True)
-    yield None
-    if os.path.exists(temp_path):
-        shutil.rmtree(temp_path, ignore_errors=True)
-
-
 @pytest.fixture()
 def setup_full_config_file():
     full_config = {

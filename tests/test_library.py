@@ -1,24 +1,9 @@
-import os
-import shutil
 from pathlib import Path
 from unittest.mock import Mock
 
 import pytest
 
 from photo_organizer.library import Library
-
-
-@pytest.fixture(autouse=True)
-def each_function():
-    temp_path = "./Temp/"
-    if os.path.exists(temp_path):
-        shutil.rmtree(temp_path, ignore_errors=True)
-    os.makedirs(temp_path, exist_ok=True)
-    os.chdir(temp_path)
-    yield None
-    os.chdir("..")
-    if os.path.exists(temp_path):
-        shutil.rmtree(temp_path, ignore_errors=True)
 
 
 @pytest.fixture()
@@ -42,9 +27,9 @@ class Test_get_all_library_paths:
         "file_should_be_lowercase"
     ])
     def test_should_hash_correctly(library, paths, expected_library_paths):
-        for p in paths:
-            os.makedirs(os.path.dirname(p), exist_ok=True)
-            with open(p, "w") as f:
+        for p in [Path(p) for p in paths]:
+            p.parent.mkdir(parents=True, exist_ok=True)
+            with p.open("w") as f:
                 f.write("RandomText")
 
         paths = library.get_all_library_paths()

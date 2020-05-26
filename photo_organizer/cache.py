@@ -21,7 +21,7 @@ class Cache:
         @param config: The config
         """
         logging.debug(f"Setting up Cache")
-        os.makedirs(config.working_dir, exist_ok=True)
+        config.working_dir.mkdir(exist_ok=True)
         self._config = config
         self._conn = sqlite3.connect(os.path.join(self._config.working_dir, "database.db"), isolation_level=None)
         self._conn.execute("""CREATE TABLE IF NOT EXISTS hash (

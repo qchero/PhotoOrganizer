@@ -1,6 +1,5 @@
 import json
 import logging
-import os
 from pathlib import Path
 
 from exception.exception import InvalidConfigException
@@ -20,7 +19,6 @@ class Config:
         config_file_path = self.cur_working_dir / "config.json"
         if not config_file_path.exists():
             raise InvalidConfigException(f"Config file not found at {config_file_path}")
-
         with config_file_path.open("r") as config_file:
             config = json.loads(config_file.read())
 
@@ -29,7 +27,7 @@ class Config:
 
         self.working_dir = self.cur_working_dir / ".PhotoOrganizer"
         if not self.working_dir.exists():
-            self.working_dir.mkdir()
+            self.working_dir.mkdir(parents=True, exist_ok=True)
 
         self.md5_size_limit = 100
 
@@ -37,7 +35,7 @@ class Config:
 
     @staticmethod
     def _validate_dir_exists(dir_path, dir_name):
-        if not os.path.exists(dir_path):
+        if not dir_path.exists():
             raise InvalidConfigException(f"{dir_name} directory {dir_path} does not exists")
 
     @staticmethod
