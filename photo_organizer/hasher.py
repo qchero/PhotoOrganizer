@@ -1,16 +1,17 @@
 import hashlib
 import os
+import pathlib
 
 
 class Hasher:
 
-    def __init__(self, size_threshold):
+    def __init__(self, size_threshold: int):
         """
         @param size_threshold: The threshold of whether the hash should be calculated by MD5 or size
         """
         self.size_threshold = size_threshold
 
-    def get_hash(self, file_path):
+    def get_hash(self, file_path: pathlib.Path):
         """
         Get the hash of a given file, using either MD5 or just the size in bytes
         If the size is too big, MD5 will not be run and the byte size will be used instead

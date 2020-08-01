@@ -1,6 +1,7 @@
 import logging
 import os
 import sqlite3
+from pathlib import Path
 from typing import Optional, List
 
 from exception.exception import DatabaseException
@@ -8,7 +9,7 @@ from photo_organizer.config import Config
 
 
 class Doc:
-    def __init__(self, path, hashcode, size):
+    def __init__(self, path: Path, hashcode: str, size: int):
         self.path = path
         self.hashcode = hashcode
         self.size = size
@@ -20,7 +21,6 @@ class Cache:
         Creating the cache object depending on a TinyDB file under WorkingDir
         @param config: The config
         """
-        logging.debug(f"Setting up Cache")
         config.working_dir.mkdir(exist_ok=True)
         self._config = config
         self._conn = sqlite3.connect(os.path.join(self._config.working_dir, "database.db"), isolation_level=None)
@@ -35,24 +35,26 @@ class Cache:
         if self._conn is not None:
             self._conn.close()
 
-    def delete_by_path(self, path: str) -> None:
+    def delete_by_path(self, path: Path) -> None:
         """
         Get the doc by hash
         @param path: The path
         @return: The doc
         """
+        path = str(path).lower()
         self._conn.execute(f"DELETE FROM hash WHERE path = '{path}'")
 
     def get_all(self):
         rows = self._conn.execute(f"SELECT * FROM hash").fetchall()
         return [self._row_to_doc(row) for row in rows]
 
-    def get_doc_by_path(self, path: str) -> Optional[Doc]:
+    def get_doc_by_path(self, path: Path) -> Optional[Doc]:
         """
         Get the doc by file path
         @param path: The file path
         @return: The doc
         """
+        path = str(path).lower()
         rows = self._conn.execute(f"SELECT * FROM hash WHERE path = '{path}'").fetchall()
         if len(rows) == 0:
             return None
@@ -70,7 +72,7 @@ class Cache:
         rows = self._conn.execute(f"SELECT * FROM hash WHERE hashcode = '{hashcode}'").fetchall()
         return [self._row_to_doc(row) for row in rows]
 
-    def upsert_hashcode_doc(self, path: str, hashcode: str, size: int) -> None:
+    def upsert_hashcode_doc(self, path: Path, hashcode: str, size: int) -> None:
         """
         Insert an record into the DB
         @param path: The file path
@@ -78,8 +80,9 @@ class Cache:
         @param size: The file size
         @return: success or not
         """
+        path = str(path).lower()
         self._conn.execute(f"REPLACE INTO hash VALUES ('{path}', '{hashcode}', {size})")
 
     @staticmethod
     def _row_to_doc(row):
-        return Doc(row[0], row[1], row[2])
+        return Doc(Path(row[0]), row[1], row[2])

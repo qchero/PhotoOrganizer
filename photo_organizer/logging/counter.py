@@ -33,6 +33,7 @@ class CounterLogger:
     def dump(self) -> None:
         for prefix, count in self.counter.items():
             logging.info(f"{prefix}: {count}")
+        self.counter.clear()
 
     def register(self, prefix: str) -> None:
         self.inc(prefix, increment=0)

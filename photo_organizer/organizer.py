@@ -8,6 +8,8 @@ from .config import Config
 from .hasher import Hasher
 from .library import Library
 from .logging.counter import CounterLogger
+from .renamer.renamer import Renamer
+from .renamer.time_extractor import FileNameTimeExtractor
 
 
 class Organizer:
@@ -16,12 +18,12 @@ class Organizer:
         """
         Constructor
         """
-        logging.debug(f"Setting up Organizer")
         self.config = config
         self.cache = Cache(self.config)
         self.hasher = Hasher(self.config.md5_size_limit * 1024 * 1024)
         self.library = Library(self.config)
         self.counter_logger = CounterLogger()
+        self.renamer = Renamer([FileNameTimeExtractor()])
 
     def audit(self):
         """
@@ -53,32 +55,61 @@ class Organizer:
         if audit_issue_found:
             raise AuditException()
 
-    def merge(self):
+    def merge(self, preview: bool):
         """
         Merge the photos pending processing into the library
-        0. Run setup & audit
+        0. Run setup
         1. Find out the duplicated ones and exclude those
         2. Rename files according to the file info
-        3. Move files into library
+        3. If not preview, move the files and update cache
         """
         self.setup()
-        self.audit()
 
-        # 1
-        incoming_paths = set(self.library.get_all_incoming_paths())
-        pending_processing_paths = []
+        incoming_paths = sorted(self.library.get_all_incoming_paths())
+        logging.info(f"Process incoming files: {len(incoming_paths)}")
+
+        incoming_path_to_hash = {}
+        incoming_hash_to_path = {}
+        incoming_path_to_new_path = {}
+        library_dedup_paths = set(self.library.get_all_library_paths())
         for path in incoming_paths:
+            # Deduplication
             hashcode = self.hasher.get_hash(path)
+            if hashcode in incoming_hash_to_path:
+                logging.warning(f"Duplicate: {path} == {incoming_hash_to_path[hashcode]}")
+                self.counter_logger.inc("Duplicates")
+                continue
             same_hash_files = self.cache.get_docs_by_hashcode(hashcode)
             if len(same_hash_files) > 0:
-                logging.warning(f"Duplicated file found: {path} is the same with {same_hash_files[0]}")
+                logging.warning(f"Duplicate: {path} == {same_hash_files[0].path}")
+                self.counter_logger.inc("Duplicates")
                 continue
-            pending_processing_paths.append(path)
 
-        # 2
+            incoming_hash_to_path[hashcode] = path
+            incoming_path_to_hash[path] = hashcode
 
+            # Calculate new paths
+            dedup_suffix = 0
+            new_path = self.renamer.get_path(path)
+            while new_path in library_dedup_paths:
+                dedup_suffix = dedup_suffix + 1
+                new_path = self.renamer.suffix_path(path, dedup_suffix)
 
-        # 3
+            logging.info(f"Plan to move {path} => {new_path}")
+            incoming_path_to_new_path[path] = new_path
+            library_dedup_paths.add(new_path)
+
+        if preview:
+            logging.info("Abort for preview")
+            return
+
+        for cur_path, new_path in incoming_path_to_new_path.items():
+            logging.info(f"Move {cur_path} => {new_path}")
+            self.library.move_file(cur_path, new_path)
+            self.cache.upsert_hashcode_doc(new_path, incoming_path_to_hash[cur_path], os.path.getsize(new_path))
+            self.counter_logger.inc("Added to library")
+
+        self.counter_logger.dump()
 
     def setup(self):
         """
@@ -93,7 +124,6 @@ class Organizer:
         cache_docs = self.cache.get_all()
         self._setup_pave_cache(library_paths, cache_docs)
 
-        logging.info("Setup Summary:")
         self.counter_logger.dump()
 
     def _setup_remove_redundant_hash(self, library_paths, cache_docs):

@@ -2,6 +2,7 @@ import argparse
 import logging
 import datetime
 import os
+from pathlib import Path
 
 from exception.exception import InvalidInputException, InvalidConfigException
 from photo_organizer.config import Config
@@ -30,8 +31,8 @@ def setup_file_logging(config, command):
     Setup file logger logging to WorkingDir/Logs/[datetime]_[command].log
     """
     file_name = f"{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}_{command}.log"
-    dir_path = os.path.join(config.working_dir, "Logs")
-    os.makedirs(dir_path, exist_ok=True)
+    dir_path = Path(config.working_dir) / "Logs"
+    dir_path.mkdir(parents=True, exist_ok=True)
     file_handler = logging.FileHandler(os.path.join(dir_path, file_name))
     file_handler.setFormatter(logging.Formatter(logging_format))
     logging.getLogger().addHandler(file_handler)
@@ -45,6 +46,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Photo Organizer.')
     parser.add_argument('action', help="setup, audit or merge")
     parser.add_argument('-debug', action="store_true", help="enable debug logging")
+    parser.add_argument('-preview', action="store_true", help="preview without modifying any media file")
     return parser.parse_args()
 
 
@@ -69,7 +71,7 @@ def main():
         elif args.action == "setup":
             organizer.setup()
         elif args.action == "merge":
-            organizer.merge()
+            organizer.merge(args.preview)
         else:
             raise InvalidInputException(f"Unsupported command '{args.action}'")
     except (InvalidInputException, InvalidConfigException) as ex:

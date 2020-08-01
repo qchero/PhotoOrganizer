@@ -14,7 +14,6 @@ class Config:
         incoming_dir - The directory of the incoming medias
         working_dir - The directory of dbs, logs and other temporary files
         """
-        logging.debug(f"Setting up Config")
         self.cur_working_dir = Path(".")
         config_file_path = self.cur_working_dir / "config.json"
         if not config_file_path.exists():

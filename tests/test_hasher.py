@@ -1,3 +1,4 @@
+import pathlib
 from pathlib import Path
 
 import pytest
@@ -16,9 +17,9 @@ def each_function():
 
 def test_should_hash_correctly():
     hasher = Hasher(100)
-    hashcode = hasher.get_hash("./2020/1.jpg")
+    hashcode = hasher.get_hash(pathlib.Path("./2020/1.jpg"))
     assert hashcode == "b539721f0afbb19451fb5e3c782e1804"
 
     hasher = Hasher(5)
-    hashcode = hasher.get_hash("./2020/1.jpg")
+    hashcode = hasher.get_hash(pathlib.Path("./2020/1.jpg"))
     assert hashcode == "17"
