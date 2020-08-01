@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from photo_organizer.hasher import get_hash
+from photo_organizer.hasher import Hasher
 
 
 @pytest.fixture(autouse=True)
@@ -15,8 +15,10 @@ def each_function():
 
 
 def test_should_hash_correctly():
-    hashcode = get_hash("./2020/1.jpg", 100)
+    hasher = Hasher(100)
+    hashcode = hasher.get_hash("./2020/1.jpg")
     assert hashcode == "b539721f0afbb19451fb5e3c782e1804"
 
-    hashcode = get_hash("./2020/1.jpg", 5)
+    hasher = Hasher(5)
+    hashcode = hasher.get_hash("./2020/1.jpg")
     assert hashcode == "17"

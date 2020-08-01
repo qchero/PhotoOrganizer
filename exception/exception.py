@@ -8,3 +8,7 @@ class InvalidConfigException(Exception):
 
 class DatabaseException(Exception):
     pass
+
+
+class AuditException(Exception):
+    pass

@@ -8,7 +8,7 @@ from photo_organizer.config import Config
 from photo_organizer.organizer import Organizer
 
 # All supported actions
-supported_actions = ["audit", "setup"]
+supported_actions = ["audit", "setup", "merge"]
 
 logging_format = "%(asctime)s %(threadName)s [%(levelname)s] %(message)s"
 
@@ -43,7 +43,7 @@ def parse_args():
     @return: the args
     """
     parser = argparse.ArgumentParser(description='Photo Organizer.')
-    parser.add_argument('action', help="setup, X or Y")
+    parser.add_argument('action', help="setup, audit or merge")
     parser.add_argument('-debug', action="store_true", help="enable debug logging")
     return parser.parse_args()
 
@@ -68,6 +68,8 @@ def main():
             organizer.audit()
         elif args.action == "setup":
             organizer.setup()
+        elif args.action == "merge":
+            organizer.merge()
         else:
             raise InvalidInputException(f"Unsupported command '{args.action}'")
     except (InvalidInputException, InvalidConfigException) as ex:

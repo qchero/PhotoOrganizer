@@ -14,6 +14,11 @@ class CounterLogger:
         self.cur_step = {}
 
     def inc(self, prefix: str, increment: int = 1, step: int = sys.maxsize) -> None:
+        """
+        @param prefix: The log prefix text
+        @param increment: The increment
+        @param step: The threshold to trigger a logging statement
+        """
         if prefix not in self.counter:
             self.counter[prefix] = increment
             self.cur_step[prefix] = 0

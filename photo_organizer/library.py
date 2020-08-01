@@ -19,6 +19,15 @@ class Library:
         media_paths = list(filter(lambda p: self._is_media_path(p), glob_paths))
         return [str(p).lower() for p in media_paths]
 
+    def get_all_incoming_paths(self) -> List[str]:
+        """
+        Get all the media paths in the incoming dir
+        @return: Paths that are relative to incoming dir and all lowercase
+        """
+        glob_paths = self._config.incoming_dir.glob("[0-9]*/**/*")
+        media_paths = list(filter(lambda p: self._is_media_path(p), glob_paths))
+        return [str(p).lower() for p in media_paths]
+
     @staticmethod
     def _is_media_path(path: pathlib.Path):
         suffix = path.suffix.lower()

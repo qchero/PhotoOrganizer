@@ -28,3 +28,8 @@ This toolkit provide the following tools:
 - Photo: jpg, heic
 - Video: mp4
 
+### Development notes
+
+- Run tests with coverage: `python .\tools\test_cov.py`
+- Perf: `python .\tools\perf.py`
+- Venv: `.\venv\Scripts\Activate.ps1`
