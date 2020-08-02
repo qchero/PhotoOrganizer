@@ -44,7 +44,7 @@ class Library:
             return False
         elif suffix not in [".bmp", ".gif", ".heic", ".jpg", ".jpeg", ".m4v", ".mov", ".mp4",
                             ".nef", ".png"]:
-            logging.debug(f"Not a recognized media file: {path}")
+            logging.info(f"Not a recognized media file: {path}")
             return False
         else:
             return True

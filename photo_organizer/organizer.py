@@ -8,8 +8,9 @@ from .config import Config
 from .hasher import Hasher
 from .library import Library
 from .logging.counter import CounterLogger
+from .renamer.exif_time_extractor import MetadataTimeExtractor
 from .renamer.renamer import Renamer
-from .renamer.time_extractor import FileNameTimeExtractor
+from .renamer.file_name_time_extractor import FileNameTimeExtractor
 
 
 class Organizer:
@@ -23,7 +24,7 @@ class Organizer:
         self.hasher = Hasher(self.config.md5_size_limit * 1024 * 1024)
         self.library = Library(self.config)
         self.counter_logger = CounterLogger()
-        self.renamer = Renamer([FileNameTimeExtractor()])
+        self.renamer = Renamer([FileNameTimeExtractor(), MetadataTimeExtractor(self.config.working_dir)])
 
     def audit(self):
         """
@@ -55,7 +56,7 @@ class Organizer:
         if audit_issue_found:
             raise AuditException()
 
-    def merge(self, preview: bool):
+    def merge(self):
         """
         Merge the photos pending processing into the library
         0. Run setup
@@ -68,48 +69,73 @@ class Organizer:
         incoming_paths = sorted(self.library.get_all_incoming_paths())
         logging.info(f"Process incoming files: {len(incoming_paths)}")
 
+        # Deduplication
         incoming_path_to_hash = {}
+        pending_processing_paths = self._merge_dedup_files(incoming_paths, incoming_path_to_hash)
+
+        # Calculate new paths
+        incoming_path_to_new_path = self._merge_calculate_new_paths(pending_processing_paths)
+        self.counter_logger.dump()
+
+        # Confirm
+        logging.warning("Continue? (y/n)")
+        if input() not in ["y", "yes"]:
+            return
+
+        # Move files
+        self._merge_move_files(incoming_path_to_new_path, incoming_path_to_hash)
+        self.counter_logger.dump()
+
+    def _merge_dedup_files(self, incoming_paths, incoming_path_to_hash):
+        pending_processing_paths = []
         incoming_hash_to_path = {}
-        incoming_path_to_new_path = {}
-        library_dedup_paths = set(self.library.get_all_library_paths())
         for path in incoming_paths:
-            # Deduplication
             hashcode = self.hasher.get_hash(path)
             if hashcode in incoming_hash_to_path:
-                logging.warning(f"Duplicate: {path} == {incoming_hash_to_path[hashcode]}")
+                logging.warning(f"Duplicate: {path} == {incoming_hash_to_path[hashcode]} ({hashcode})")
                 self.counter_logger.inc("Duplicates")
                 continue
             same_hash_files = self.cache.get_docs_by_hashcode(hashcode)
             if len(same_hash_files) > 0:
-                logging.warning(f"Duplicate: {path} == {same_hash_files[0].path}")
+                logging.warning(f"Duplicate: {path} == {same_hash_files[0].path} ({hashcode})")
                 self.counter_logger.inc("Duplicates")
                 continue
 
             incoming_hash_to_path[hashcode] = path
             incoming_path_to_hash[path] = hashcode
+            pending_processing_paths.append(path)
 
-            # Calculate new paths
+        return pending_processing_paths
+
+    def _merge_calculate_new_paths(self, pending_processing_paths):
+        # Calculate new paths
+        incoming_path_to_new_path = {}
+        library_dedup_paths = set(self.library.get_all_library_paths())
+        for path in pending_processing_paths:
             dedup_suffix = 0
             new_path = self.renamer.get_path(path)
+            if not new_path:
+                logging.warning(f"Unable to rename {path}")
+                self.counter_logger.inc("Unable to rename")
+                continue
+
+            new_path_without_dedup_suffix = new_path
             while new_path in library_dedup_paths:
                 dedup_suffix = dedup_suffix + 1
-                new_path = self.renamer.suffix_path(path, dedup_suffix)
+                new_path = self.renamer.suffix_path(new_path_without_dedup_suffix, dedup_suffix)
 
             logging.info(f"Plan to move {path} => {new_path}")
             incoming_path_to_new_path[path] = new_path
             library_dedup_paths.add(new_path)
+            self.counter_logger.inc("Plan to move")
+        return incoming_path_to_new_path
 
-        if preview:
-            logging.info("Abort for preview")
-            return
-
+    def _merge_move_files(self, incoming_path_to_new_path, incoming_path_to_hash):
         for cur_path, new_path in incoming_path_to_new_path.items():
             logging.info(f"Move {cur_path} => {new_path}")
             self.library.move_file(cur_path, new_path)
             self.cache.upsert_hashcode_doc(new_path, incoming_path_to_hash[cur_path], os.path.getsize(new_path))
             self.counter_logger.inc("Added to library")
-
-        self.counter_logger.dump()
 
     def setup(self):
         """
@@ -119,12 +145,13 @@ class Organizer:
         """
         library_paths = set(self.library.get_all_library_paths())
         cache_docs = self.cache.get_all()
+        logging.info(f"Pre-Setup Hash size: {len(cache_docs)}")
         self._setup_remove_redundant_hash(library_paths, cache_docs)
 
         cache_docs = self.cache.get_all()
         self._setup_pave_cache(library_paths, cache_docs)
 
-        self.counter_logger.dump()
+        logging.info(f"Post-Setup Hash size: {len(self.cache.get_all())}")
 
     def _setup_remove_redundant_hash(self, library_paths, cache_docs):
         for path in [doc.path for doc in cache_docs]:
@@ -132,12 +159,13 @@ class Organizer:
                 self.cache.delete_by_path(path)
                 logging.debug(f"Hash removed for non-exist file: {path}")
                 self.counter_logger.inc("Hash removed", step=1000)
+        self.counter_logger.dump()
 
     def _setup_pave_cache(self, library_paths, cache_docs):
         # Check if cache entry already exists
         cache_paths = set([doc.path for doc in cache_docs])
         paths_to_hash = list(filter(lambda p: p not in cache_paths, library_paths))
-        self.counter_logger.inc(f"Hash exists", increment=len(library_paths) - len(paths_to_hash))
+        self.counter_logger.inc(f"Hash hits", increment=len(library_paths) - len(paths_to_hash))
 
         # Compute and update hash
         logging.info(f"Files to hash: {len(paths_to_hash)}")
@@ -146,6 +174,7 @@ class Organizer:
             self.cache.upsert_hashcode_doc(path, hashcode, os.path.getsize(path))
             logging.debug(f"Hashed to {hashcode}: {path}")
             self.counter_logger.inc("Hash computed", step=1000)
+        self.counter_logger.dump()
 
     @staticmethod
     def _group_by(docs: List[Doc], key_selector: Callable[[Doc], str]):

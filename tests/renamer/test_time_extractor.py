@@ -2,7 +2,7 @@ from datetime import datetime
 
 import pytest
 
-from photo_organizer.renamer.time_extractor import FileNameTimeExtractor
+from photo_organizer.renamer.file_name_time_extractor import FileNameTimeExtractor
 
 
 class TestFileNameTimeExtractor:

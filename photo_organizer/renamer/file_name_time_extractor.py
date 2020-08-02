@@ -1,19 +1,22 @@
 import datetime
 import re
 import logging
+from pathlib import Path
+from typing import Optional
 
 
 class FileNameTimeExtractor:
     """
-    The naming strategy by inferring from file name
+    The time extractor from file name
     """
-
     def __init__(self):
         self.known_patterns = [
-            "%Y%m%d_%H%M%S"
+            "%Y%m%d_%H%M%S",
+            "%Y%m%d-%H%M%S"
         ]
 
-    def get_time(self, filename):
+    def get_time(self, path: Path) -> Optional[datetime.datetime]:
+        filename = path.name
         for pattern in self.known_patterns:
             regex_pattern = self._get_regex_pattern(pattern)
             matches = re.findall(regex_pattern, filename)

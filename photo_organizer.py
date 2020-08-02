@@ -46,7 +46,6 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Photo Organizer.')
     parser.add_argument('action', help="setup, audit or merge")
     parser.add_argument('-debug', action="store_true", help="enable debug logging")
-    parser.add_argument('-preview', action="store_true", help="preview without modifying any media file")
     return parser.parse_args()
 
 
@@ -71,7 +70,7 @@ def main():
         elif args.action == "setup":
             organizer.setup()
         elif args.action == "merge":
-            organizer.merge(args.preview)
+            organizer.merge()
         else:
             raise InvalidInputException(f"Unsupported command '{args.action}'")
     except (InvalidInputException, InvalidConfigException) as ex:

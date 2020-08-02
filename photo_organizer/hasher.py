@@ -1,4 +1,5 @@
 import hashlib
+import logging
 import os
 import pathlib
 
@@ -22,6 +23,9 @@ class Hasher:
         """
         size = os.path.getsize(file_path)
         if size > self.size_threshold:
-            return str(os.path.getsize(file_path))
+            hashcode = str(os.path.getsize(file_path))
+        else:
+            hashcode = hashlib.md5(open(file_path, 'rb').read()).hexdigest()
 
-        return hashlib.md5(open(file_path, 'rb').read()).hexdigest()
+        logging.debug(f"Hash {file_path} to {hashcode}")
+        return hashcode
