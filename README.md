@@ -4,7 +4,7 @@ A Python toolkit to organize personal photos and videos for Windows
 
 ## Overview
 
-Photos and videos are hard to manage, especially if you like to take a lot. You often 
+Photos and videos are hard to manage, especially if you like to take a lot. You often
 
 This toolkit provide the following tools:
 
@@ -14,9 +14,23 @@ This toolkit provide the following tools:
 
 ### Deduplication
 
+## Instructions
+
+1. Copy photos and videos into `E:\OneDrive\Photo Library\Incoming`
+
+1. Open cmd.exe and go to `E:\OneDrive\Photo Library`
+
+1. Run `python E:\Code\PhotoOrganizer\photo_organizer.py setup` to rehash existing files in library
+
+1. [Optional] Run `python E:\Code\PhotoOrganizer\photo_organizer.py audit` to check for anomalies
+
+1. Run `python E:\Code\PhotoOrganizer\photo_organizer.py merge` to merge files into library
+   - Check warning logs to analyze potential issues
+   - Wait for processing and confirmation and input "y" to start the merge
+
 ## Get Started
 
-- Copy `exiftool.exe` to working dir 
+- Copy `exiftool.exe` to working dir
 
 ## Q&A
 
@@ -45,3 +59,10 @@ This toolkit provide the following tools:
     - For `.jpg` photo, the fime name is local time without timezone, so is `EXIF:DateTimeOriginal`
     - For `.mp4` video, the fime name is local time without timezone, while all `QuickTime:*` are UTC time
     - timezone will be auto adjusted
+
+### Findings
+
+221114
+
+- Some portrait photos are corrupted like 20211126_115753_01.heic. Only happening to portrait photos though..
+- The date time provided by OneDrive is incorrect. It's likely the UTC date. This need to be fixed by not using the file name anymore
